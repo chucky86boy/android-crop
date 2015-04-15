@@ -22,8 +22,10 @@ import android.content.Context;
 import android.database.Cursor;
 import android.media.ExifInterface;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.ParcelFileDescriptor;
+import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
@@ -97,6 +99,36 @@ class CropUtil {
             final String[] filePathColumn = { MediaStore.MediaColumns.DATA, MediaStore.MediaColumns.DISPLAY_NAME };
             Cursor cursor = null;
             try {
+                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT){
+                    //referenced http://tilltue.tistory.com/entry/File-%EC%9D%98-realPath-%EA%B0%80%EC%A0%B8%EC%98%A4%EA%B8%B0
+                    final String docId = DocumentsContract.getDocumentId(uri);
+                    if(docId != null){
+                        final String[] selectionArgs = new String[] {
+                                docId.split(":")[1]
+                        };
+                        final String selection = "_id=?";
+                        cursor = context.getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                                filePathColumn, selection, selectionArgs,null);
+                    }
+                }
+                if(cursor == null){
+                    cursor = resolver.query(uri, filePathColumn, null, null, null);
+                }
+                if (cursor != null && cursor.moveToFirst()) {
+                    String filePath;
+                    final int columnIndex = (uri.toString().startsWith("content://com.google.android.gallery3d")) ?
+                            cursor.getColumnIndex(MediaStore.MediaColumns.DISPLAY_NAME) :
+                            cursor.getColumnIndex(MediaStore.MediaColumns.DATA);
+                    // Picasa images on API 13+
+                    if (columnIndex != -1) {
+                        filePath = cursor.getString(columnIndex);
+                        if (!TextUtils.isEmpty(filePath)) {
+                            return new File(filePath);
+                        }
+                    }
+                }
+
+
                 cursor = resolver.query(uri, filePathColumn, null, null, null);
                 if (cursor != null && cursor.moveToFirst()) {
                     final int columnIndex = (uri.toString().startsWith("content://com.google.android.gallery3d")) ?
