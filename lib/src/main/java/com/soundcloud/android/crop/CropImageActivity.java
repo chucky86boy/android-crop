@@ -47,6 +47,8 @@ public class CropImageActivity extends MonitoredActivity {
     private static final boolean IN_MEMORY_CROP = Build.VERSION.SDK_INT < Build.VERSION_CODES.GINGERBREAD_MR1;
     private static final int SIZE_DEFAULT = 2048;
     private static final int SIZE_LIMIT = 4096;
+    private static final String EXTRA_GET_BOUNDARIES = "com.soundcloud.android.crop.intent.extra.GET_BOUNDARIES";
+    private static final String EXTRA_BOUNDARIES = "com.soundcloud.android.crop.intent.extra.BOUNDARIES";
 
     private final Handler handler = new Handler();
 
@@ -267,6 +269,11 @@ public class CropImageActivity extends MonitoredActivity {
 
         Bitmap croppedImage;
         Rect r = cropView.getScaledCropRect(sampleSize);
+
+        if(getIntent().getBooleanExtra(EXTRA_GET_BOUNDARIES, false)){
+            getIntent().putExtra(EXTRA_BOUNDARIES, r);
+        }
+
         int width = r.width();
         int height = r.height();
 
@@ -464,6 +471,12 @@ public class CropImageActivity extends MonitoredActivity {
     }
 
     private void setResultUri(Uri uri) {
+        Intent intent = new Intent().putExtra(MediaStore.EXTRA_OUTPUT, uri);
+
+        if(getIntent().getBooleanExtra(EXTRA_GET_BOUNDARIES, false)){
+            intent.putExtra(EXTRA_BOUNDARIES, getIntent().getParcelableExtra(EXTRA_BOUNDARIES));
+        }
+
         setResult(RESULT_OK, new Intent().putExtra(MediaStore.EXTRA_OUTPUT, uri));
     }
 
